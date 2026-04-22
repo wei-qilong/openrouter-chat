@@ -59,8 +59,8 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': 'https://example.com',
-          'X-Title': 'Test Chat App',
+          'HTTP-Referer': window.location.href,
+          'X-Title': 'OpenRouter Chat',
         },
         body: JSON.stringify({
           model: 'openrouter/free',
@@ -72,6 +72,9 @@ export default function Home() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Invalid API Key. Please check your API key and try again.');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -132,9 +135,16 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error: Failed to get response';
+      
+      // If it's a 401 error, show the API key input again
+      if (errorMessage.includes('Invalid API Key')) {
+        setApiKeySaved(false);
+      }
+      
       setMessages(prev => prev.map(msg => 
         msg.role === 'assistant' && msg.content === '' 
-          ? { ...msg, content: 'Error: Failed to get response' }
+          ? { ...msg, content: errorMessage }
           : msg
       ));
     } finally {
@@ -144,8 +154,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-blue-600 text-white py-4 px-6 shadow-md">
+      <header className="bg-blue-600 text-white py-4 px-6 shadow-md flex justify-between items-center">
         <h1 className="text-2xl font-bold">OpenRouter Chat</h1>
+        {apiKeySaved && (
+          <button 
+            onClick={() => setApiKeySaved(false)} 
+            className="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            Change API Key
+          </button>
+        )}
       </header>
       
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4">
